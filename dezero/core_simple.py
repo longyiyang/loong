@@ -2,6 +2,9 @@ import numpy as np
 import weakref
 import contextlib
 
+class Config:
+    enable_backprop=True
+
 class Variable:
     def __init__(self,data,name=None):
         if data is not None:
@@ -24,10 +27,6 @@ class Variable:
     
     __array_priority__=200
     
-    #重载运算符
-    def __mul__(self,other):
-        return mul(self,other)
-
     @property
     def shape(self):
         return self.data.shape
@@ -107,7 +106,7 @@ class Function:
     
     def backward(self,gys):
         raise NotImplementedError()
-
+    
 class Add(Function):
     def forward(self,x0,x1):
         y=x0+x1
@@ -115,20 +114,7 @@ class Add(Function):
     
     def backward(slef,gy):
         return gy,gy
-
-class Square(Function):
-    def forward(self,x):
-        y=x**2
-        return y
     
-    def backward(self,gy):
-        x=self.inputs[0].data
-        gx=2*x*gy
-        return gx
-    
-class Config:
-    enable_backprop=True
-
 class Mul(Function):
     def forward(self,x0,x1):
         y=x0*x1
@@ -137,13 +123,13 @@ class Mul(Function):
     def backward(self, gy):
         x0,x1=self.inputs[0].data,self.inputs[1].data
         return gy*x1,gy*x0
-
+    
 class Neg(Function):
     def forward(self,x):
         return -x
     def backward(self,gy):
         return -gy
-
+    
 class Sub(Function):
     def forward(self,x0,x1):
         y=x0-x1
@@ -151,7 +137,7 @@ class Sub(Function):
     
     def backward(self,gy):
         return gy,-gy
-
+    
 class Div(Function):
     def forward(self,x0,x1):
         y=x0/x1
@@ -201,9 +187,6 @@ def add(x0,x1):
     x1=as_array(x1)
     return Add()(x0,x1)
     
-def square(x):
-    return Square()(x)
-
 def as_array(x):  #转换成array类型是为了多变量输入输出
     if np.isscalar(x):
         return np.array(x)
@@ -229,13 +212,14 @@ def as_variable(obj):
         return obj
     return Variable(obj)
 
-Variable.__mul__=mul
-Variable.__add__=add
-Variable.__radd__=add
-Variable.__rmul__=mul
-Variable.__neg__=neg
-Variable.__sub__=sub
-Variable.__rsub__=rsub
-Variable.__truediv__=div
-Variable.__rtruediv__=rdiv
-Variable.__pow__=pow
+def setup_variable():
+    Variable.__mul__=mul
+    Variable.__add__=add
+    Variable.__radd__=add
+    Variable.__rmul__=mul
+    Variable.__neg__=neg
+    Variable.__sub__=sub
+    Variable.__rsub__=rsub
+    Variable.__truediv__=div
+    Variable.__rtruediv__=rdiv
+    Variable.__pow__=pow
